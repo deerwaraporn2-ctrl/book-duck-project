@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Profile</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+    <script src="index.js" defer></script>
+</head>
+
+<body>
+
+    <!-- NAVBAR -->
+    <div id="navbar">
+
+        <h2 class="logo">U-READ</h2>
+
+        <div class="nav-links">
+            <a href="index.html">Home</a>
+        </div>
+
+        <div class="nav-actions">
+            <button onclick="logout()">Logout</button>
+        </div>
+
+    </div>
+
+    <!-- PROFILE -->
+    <div class="profile-container">
+
+        <h1 id="welcome-user">Welcome</h1>
+
+    </div>
+
+    <div class="profile-page">
+
+       <!--  <h1 id="welcome-user">Welcome User</h1> -->
+
+        <div class="profile-boxes">
+
+            <!-- TO READ -->
+            <div class="profile-box">
+                <h2>To Read</h2>
+
+                <div class="book-item">
+                    <img src="https://placehold.co/80x110" alt="">
+
+                    <div>
+                        <h3>Atomic Habits</h3>
+                        <p>James Clear</p>
+                    </div>
+                </div>
+
+                <div class="book-item">
+                    <img src="https://placehold.co/80x110" alt="">
+
+                    <div>
+                        <h3>Deep Work</h3>
+                        <p>Cal Newport</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- RATED -->
+            <div class="profile-box">
+                <h2>Rated Books</h2>
+
+                <div class="book-item">
+                    <img src="https://placehold.co/80x110" alt="">
+
+                    <div>
+                        <h3>The Let Them Theory</h3>
+                        <p>Mel Robbins</p>
+                        <p>⭐⭐⭐⭐⭐</p>
+                    </div>
+                </div>
+
+                <div class="book-item">
+                    <img src="https://placehold.co/80x110" alt="">
+
+                    <div>
+                        <h3>Lagom</h3>
+                        <p>Linnea Dunne</p>
+                        <p>⭐⭐⭐⭐</p>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+</body>
+
+</html>
