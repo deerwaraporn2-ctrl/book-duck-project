@@ -11,9 +11,10 @@ async function handleLogin() {
 
     localStorage.setItem("token", res.data.jwt);
 
+    localStorage.setItem("user", JSON.stringify(res.data.user));
+
     // Reload page to update UI
     window.location.href = "profile.html";
-
   } catch (err) {
     alert("Login failed");
     console.log(err.response?.data);
@@ -38,7 +39,6 @@ async function handleRegister() {
     document.getElementById("register-username").value = "";
     document.getElementById("register-email").value = "";
     document.getElementById("register-password").value = "";
-
   } catch (err) {
     alert(err.response?.data?.error?.message || "Register failed");
   }
@@ -69,7 +69,6 @@ async function checkUser() {
         Authorization: `Bearer ${token}`,
       },
     });
-
   } catch (err) {
     // Token invalid or expired
     localStorage.removeItem("token");
@@ -96,10 +95,8 @@ async function loadProfile() {
     const welcomeText = document.getElementById("welcome-user");
 
     if (welcomeText) {
-      welcomeText.innerText =
-        "Welcome " + res.data.username;
+      welcomeText.innerText = "Welcome " + res.data.username;
     }
-
   } catch (err) {
     localStorage.removeItem("token");
     window.location.href = "login.html";
@@ -113,40 +110,98 @@ function logout() {
   window.location.href = "login.html";
 }
 
-
 // ================= LOAD BOOKS =================
 async function loadBooks() {
   try {
     const res = await axios.get("http://localhost:1337/api/books?populate=*");
 
     const books = res.data.data;
-    const container = document.getElementById("books-container");
 
-    container.innerHTML = "";
+    const booksContainer = document.getElementById("books-container");
+
+    booksContainer.innerHTML = "";
 
     books.forEach((book) => {
-      const b = book;
+      console.log(book);
+      const data = book;
 
-      const imageUrl = b.cover?.[0]?.url
-        ? "http://localhost:1337" + b.cover[0].url
-        : "";
+      const image = data.cover?.[0]?.url
+        ? `http://localhost:1337${data.cover[0].url}`
+        : "https://placehold.co/300x400?text=No+Image";
 
-      container.innerHTML += `
-        <div class="book-card" onclick='openModal(${JSON.stringify(b)})'>
-          <img src="${imageUrl}" alt="${b.title}" />
-          <h3>${b.title}</h3>
-          <p>${b.author}</p>
-          <p>${b.pages ?? "No page info"} pages</p>
+      const title = data.title || "No title";
+      const author = data.author || "Unknown author";
+      const pages = data.pages || "-";
+      const published = data.publishedDate || "-";
+
+      const bookCard = `
+        <div class="book-card">
+
+          <img 
+            src="${image}" 
+            alt="${title}"
+            class="book-image"
+          />
+
+          <div class="book-info">
+
+            <h3>${title}</h3>
+
+            <p>
+              <strong>Author:</strong>
+              ${author}
+            </p>
+
+            <p>
+              <strong>Pages:</strong>
+              ${pages || "-"}
+            </p>
+
+            <p>
+              <strong>Published:</strong>
+              ${published}
+            </p>
+
+            <button 
+              class="view-btn"
+              data-id="${book.id}"
+            >
+              View
+            </button>
+
+          </div>
+
         </div>
       `;
+
+      booksContainer.innerHTML += bookCard;
+      const viewButtons = document.querySelectorAll(".view-btn");
+
+      viewButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const token = localStorage.getItem("token");
+
+          if (!token) {
+            alert("Please login to view book details.");
+            return;
+          }
+
+          const bookId = button.dataset.id;
+
+          const selectedBook = books.find((book) => book.id == bookId);
+
+          openModal(selectedBook);
+        });
+      });
     });
   } catch (err) {
-    console.error("Error loading books", err);
+    console.log(err);
   }
 }
 
 // ================= OPEN MODAL =================
 function openModal(book) {
+
   const modal = document.getElementById("book-modal");
 
   const imageUrl = book.cover?.[0]?.url
@@ -154,17 +209,28 @@ function openModal(book) {
     : "";
 
   document.getElementById("modal-image").src = imageUrl;
-  document.getElementById("modal-title").innerText = book.title;
-  document.getElementById("modal-author").innerText = book.author;
+
+  document.getElementById("modal-title").innerText =
+    book.title;
+
+  document.getElementById("modal-author").innerText =
+    "Author: " + book.author;
+
   document.getElementById("modal-pages").innerText =
-    (book.pages ?? "No page info") + " pages";
+    "Pages: " + (book.pages || "-");
+
+  document.getElementById("modal-date").innerText =
+    "Published: " + book.publishedDate;
+
+  document.getElementById("modal-description").innerText =
+    book.description || "No description available.";
 
   modal.classList.remove("hidden");
+
 }
 
 // ================= CLOSE MODAL =================
 document.addEventListener("DOMContentLoaded", () => {
-
   // Only run modal code if modal exists
   const closeBtn = document.getElementById("close-modal");
 
@@ -184,5 +250,37 @@ document.addEventListener("DOMContentLoaded", () => {
   if (document.getElementById("welcome-user")) {
     loadProfile();
   }
+});
+
+// ================= AUTH UI =================
+
+const token = localStorage.getItem("token");
+
+const loginLink = document.getElementById("login-link");
+const registerLink = document.getElementById("register-link");
+
+const profileLink = document.getElementById("profile-link");
+const logoutBtn = document.getElementById("logout-btn");
+
+if (token) {
+
+  loginLink.classList.add("hidden");
+  registerLink.classList.add("hidden");
+
+  profileLink.classList.remove("hidden");
+  logoutBtn.classList.remove("hidden");
+
+}
+
+
+
+// ================= LOGOUT =================
+
+logoutBtn.addEventListener("click", () => {
+
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+
+  window.location.href = "index.html";
 
 });

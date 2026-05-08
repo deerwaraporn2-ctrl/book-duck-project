@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Book Ducks</title>
 
   <!-- Axios -->
@@ -31,34 +32,74 @@
     </div>
 
     <div class="nav-actions">
-      <a href="login.html">Login</a>
-      <a href="login.html">Register</a>
+
+      <a id="login-link" href="login.html">
+        Login
+      </a>
+
+      <a id="register-link" href="register.html">
+        Register
+      </a>
+
+      <a id="profile-link" href="profile.html" class="hidden">
+        Profile
+      </a>
+
+      <a href="#" id="logout-btn" class="hidden">
+        Logout
+      </a>
+
     </div>
   </div>
 
   <!-- ================= BOOK GRID ================= -->
-  <div id="books-container"></div>
+  <section class="books-section">
+
+    <h1 class="books-title">All Books</h1>
+
+    <div id="books-container"></div>
+
+  </section>
 
   <!-- ================= BOOK MODAL ================= -->
+  <!-- ================= BOOK MODAL ================= -->
+
   <div id="book-modal" class="hidden">
+
     <div class="modal-content">
 
-      <button id="close-modal">X</button>
+      <button id="close-modal">
+        ✕
+      </button>
 
       <img id="modal-image" />
 
-      <h2 id="modal-title"></h2>
-      <p id="modal-author"></p>
-      <p id="modal-pages"></p>
+      <div class="modal-info">
 
-      <button id="save-btn">📚 Save to read</button>
+        <h2 id="modal-title"></h2>
 
-      <div class="modal-rating">
-        ⭐ ⭐ ⭐ ⭐ ⭐
+        <p id="modal-author"></p>
+
+        <p id="modal-pages"></p>
+
+        <p id="modal-date"></p>
+
+        <p id="modal-description"></p>
+
+        <button id="save-btn">
+          📚 Save to Read
+        </button>
+
+        <div class="modal-rating">
+          ⭐ ⭐ ⭐ ⭐ ⭐
+        </div>
+
       </div>
 
     </div>
+
   </div>
 
 </body>
+
 </html>
