@@ -76,30 +76,108 @@ async function checkUser() {
 }
 
 // ================= Load Profile =================
+
 async function loadProfile() {
   const token = localStorage.getItem("token");
 
-  // Not logged in
-  if (!token) {
-    window.location.href = "login.html";
-    return;
-  }
+  const user = JSON.parse(localStorage.getItem("user"));
 
   try {
-    const res = await axios.get("http://localhost:1337/api/users/me", {
-      headers: {
-        Authorization: `Bearer ${token}`,
+    // Welcome text
+    document.getElementById("welcome-user").innerText =
+      `Welcome ${user.username}`;
+
+    // Get user with saved books
+    const res = await axios.get(
+      `http://localhost:1337/api/users/${user.id}?populate[savedBooks][populate]=cover`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       },
-    });
+    );
 
-    const welcomeText = document.getElementById("welcome-user");
+    console.log(res.data);
 
-    if (welcomeText) {
-      welcomeText.innerText = "Welcome " + res.data.username;
+    const currentUser = res.data;
+
+    // Save & Sort
+    const books = currentUser.savedBooks || [];
+
+    const sortValue = document.getElementById("sort-books").value;
+
+    if (sortValue === "title") {
+      books.sort((a, b) => a.title.localeCompare(b.title));
     }
+
+    if (sortValue === "author") {
+      books.sort((a, b) => a.author.localeCompare(b.author));
+    }
+
+    const savedContainer = document.getElementById("saved-books");
+
+    savedContainer.innerHTML = "";
+
+    books.forEach((book) => {
+      console.log(book);
+
+      console.log(book.cover);
+
+      const image = book.cover?.[0]?.url
+        ? `http://localhost:1337${book.cover[0].url}`
+        : "https://placehold.co/80x110?text=No+Image";
+
+      const card = `
+        <div class="saved-book-card">
+
+          <img 
+            src="${image}" 
+            class="saved-book-image"
+          />
+
+          <div class="saved-book-info">
+            <h3>${book.title}</h3>
+
+            <p>
+              <strong>Author:</strong>
+              ${book.author}
+            </p>
+
+            <p>
+              <strong>Pages:</strong>
+              ${book.pages || "-"}
+            </p>
+
+            <p>
+              <strong>Published:</strong>
+              ${book.publishedDate || "-"}
+            </p>
+
+            <button 
+              class="read-btn"
+              data-id="${book.id}"
+            >
+              Read
+            </button>
+
+            <button 
+              class="remove-btn"
+              data-id="${book.id}"
+            >
+              Remove
+            </button>
+
+          </div>
+
+        </div>
+
+        <hr class="saved-divider">
+      `;
+
+      savedContainer.innerHTML += card;
+    });
   } catch (err) {
-    localStorage.removeItem("token");
-    window.location.href = "login.html";
+    console.log(err);
   }
 }
 
@@ -122,17 +200,14 @@ async function loadBooks() {
     booksContainer.innerHTML = "";
 
     books.forEach((book) => {
-      console.log(book);
-      const data = book;
-
-      const image = data.cover?.[0]?.url
-        ? `http://localhost:1337${data.cover[0].url}`
+      const image = book.cover?.[0]?.url
+        ? `http://localhost:1337${book.cover[0].url}`
         : "https://placehold.co/300x400?text=No+Image";
 
-      const title = data.title || "No title";
-      const author = data.author || "Unknown author";
-      const pages = data.pages || "-";
-      const published = data.publishedDate || "-";
+      const title = book.title || "No title";
+      const author = book.author || "Unknown author";
+      const pages = book.pages || "-";
+      const published = book.publishedDate || "-";
 
       const bookCard = `
         <div class="book-card">
@@ -154,7 +229,7 @@ async function loadBooks() {
 
             <p>
               <strong>Pages:</strong>
-              ${pages || "-"}
+              ${pages}
             </p>
 
             <p>
@@ -175,23 +250,25 @@ async function loadBooks() {
       `;
 
       booksContainer.innerHTML += bookCard;
-      const viewButtons = document.querySelectorAll(".view-btn");
+    });
 
-      viewButtons.forEach((button) => {
-        button.addEventListener("click", () => {
-          const token = localStorage.getItem("token");
+    // VIEW BUTTONS
+    const viewButtons = document.querySelectorAll(".view-btn");
 
-          if (!token) {
-            alert("Please login to view book details.");
-            return;
-          }
+    viewButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const token = localStorage.getItem("token");
 
-          const bookId = button.dataset.id;
+        if (!token) {
+          alert("Please login to view book details.");
+          return;
+        }
 
-          const selectedBook = books.find((book) => book.id == bookId);
+        const bookId = button.dataset.id;
 
-          openModal(selectedBook);
-        });
+        const selectedBook = books.find((book) => book.id == bookId);
+
+        openModal(selectedBook);
       });
     });
   } catch (err) {
@@ -201,7 +278,6 @@ async function loadBooks() {
 
 // ================= OPEN MODAL =================
 function openModal(book) {
-
   const modal = document.getElementById("book-modal");
 
   const imageUrl = book.cover?.[0]?.url
@@ -210,14 +286,14 @@ function openModal(book) {
 
   document.getElementById("modal-image").src = imageUrl;
 
-  document.getElementById("modal-title").innerText =
-    book.title;
+  document.getElementById("modal-title").innerText = book.title;
 
-  document.getElementById("modal-author").innerText =
-    "Author: " + book.author;
+  document.getElementById("modal-author").innerText = "Author: " + book.author;
 
   document.getElementById("modal-pages").innerText =
     "Pages: " + (book.pages || "-");
+
+  document.getElementById("save-btn").dataset.id = book.id;
 
   document.getElementById("modal-date").innerText =
     "Published: " + book.publishedDate;
@@ -226,11 +302,64 @@ function openModal(book) {
     book.description || "No description available.";
 
   modal.classList.remove("hidden");
+}
 
+// ================= SAVE BOOK =================
+async function saveBook(event) {
+  const token = localStorage.getItem("token");
+
+  const user = JSON.parse(localStorage.getItem("user"));
+
+  const bookId = Number(event.target.dataset.id);
+
+  try {
+    // Get current user with books
+    const userRes = await axios.get(
+      `http://localhost:1337/api/users/${user.id}?populate=savedBooks`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+    // Existing saved books
+    const existingBooks = userRes.data.savedBooks
+      ? userRes.data.savedBooks.map((book) => book.id)
+      : [];
+
+    // Prevent duplicates
+    if (!existingBooks.includes(bookId)) {
+      existingBooks.push(bookId);
+    }
+
+    // Update user
+    await axios.put(
+      `http://localhost:1337/api/users/${user.id}`,
+      {
+        savedBooks: existingBooks,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+    alert("Book saved to your profile 📚");
+  } catch (err) {
+    console.log(err);
+    alert("Could not save book");
+  }
 }
 
 // ================= CLOSE MODAL =================
 document.addEventListener("DOMContentLoaded", () => {
+  const sortBooks = document.getElementById("sort-books");
+
+  if (sortBooks) {
+    sortBooks.addEventListener("change", loadProfile);
+  }
   // Only run modal code if modal exists
   const closeBtn = document.getElementById("close-modal");
 
@@ -250,6 +379,13 @@ document.addEventListener("DOMContentLoaded", () => {
   if (document.getElementById("welcome-user")) {
     loadProfile();
   }
+
+  // saved-btn event
+  const saveBtn = document.getElementById("save-btn");
+
+  if (saveBtn) {
+    saveBtn.addEventListener("click", saveBook);
+  }
 });
 
 // ================= AUTH UI =================
@@ -263,24 +399,30 @@ const profileLink = document.getElementById("profile-link");
 const logoutBtn = document.getElementById("logout-btn");
 
 if (token) {
+  if (loginLink) {
+    loginLink.classList.add("hidden");
+  }
 
-  loginLink.classList.add("hidden");
-  registerLink.classList.add("hidden");
+  if (registerLink) {
+    registerLink.classList.add("hidden");
+  }
 
-  profileLink.classList.remove("hidden");
-  logoutBtn.classList.remove("hidden");
+  if (profileLink) {
+    profileLink.classList.remove("hidden");
+  }
 
+  if (logoutBtn) {
+    logoutBtn.classList.remove("hidden");
+  }
 }
-
-
 
 // ================= LOGOUT =================
 
-logoutBtn.addEventListener("click", () => {
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
 
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
-
-  window.location.href = "index.html";
-
-});
+    window.location.href = "index.html";
+  });
+}

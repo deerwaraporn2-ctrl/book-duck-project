@@ -451,3 +451,79 @@ html, body {
 .modal-rating {
   font-size: 28px;
 }
+
+/* Saved-book */
+.saved-book-card {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  align-items: center;
+}
+
+.saved-book-image {
+  width: 80px;
+  height: 110px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.saved-book-info h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+.saved-book-info p {
+  margin: 4px 0;
+  font-size: 14px;
+}
+
+.saved-divider {
+  border: none;
+  border-top: 1px solid #d9d9d9;
+  margin: 20px 0;
+}
+
+/* Read & remove-btn */
+
+.read-btn,
+.remove-btn {
+  margin-top: 10px;
+  padding: 7px 16px;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: 0.2s ease;
+}
+
+/* READ BUTTON */
+.read-btn {
+  background-color: #5f7fb4;
+  color: white;
+  margin-right: 8px;
+}
+
+.read-btn:hover {
+  opacity: 0.9;
+}
+
+/* REMOVE BUTTON */
+.remove-btn {
+  background-color: #e5e5e5;
+  color: #333;
+}
+
+.remove-btn:hover {
+  background-color: #d6d6d6;
+}
+
+/* Sort book */
+#sort-books {
+  margin-bottom: 20px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  cursor: pointer;
+}

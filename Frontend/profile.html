@@ -24,7 +24,15 @@
         </div>
 
         <div class="nav-actions">
-            <button onclick="logout()">Logout</button>
+
+            <a href="profile.html">
+                Profile
+            </a>
+
+            <a href="#" id="logout-btn">
+                Logout
+            </a>
+
         </div>
 
     </div>
@@ -38,31 +46,21 @@
 
     <div class="profile-page">
 
-       <!--  <h1 id="welcome-user">Welcome User</h1> -->
+        <!--  <h1 id="welcome-user">Welcome User</h1> -->
 
         <div class="profile-boxes">
 
             <!-- TO READ -->
             <div class="profile-box">
+
                 <h2>To Read</h2>
 
-                <div class="book-item">
-                    <img src="https://placehold.co/80x110" alt="">
+                <select id="sort-books">
+                    <option value="title">Sort by Title</option>
+                    <option value="author">Sort by Author</option>
+                </select>
 
-                    <div>
-                        <h3>Atomic Habits</h3>
-                        <p>James Clear</p>
-                    </div>
-                </div>
-
-                <div class="book-item">
-                    <img src="https://placehold.co/80x110" alt="">
-
-                    <div>
-                        <h3>Deep Work</h3>
-                        <p>Cal Newport</p>
-                    </div>
-                </div>
+                <div id="saved-books"></div>
 
             </div>
 
