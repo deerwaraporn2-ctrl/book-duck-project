@@ -94,6 +94,57 @@ html, body {
   background: #4a6fa0;
 }
 
+/* ================= NAVBAR IMPROVEMENT ================= */
+
+#navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+
+  background: white;
+
+  border-bottom: 1px solid #e5e5e5;
+
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+/* NAV LINKS */
+
+.nav-links a {
+  color: #333;
+
+  font-weight: 600;
+
+  transition: 0.2s ease;
+}
+
+.nav-links a:hover {
+  color: #5f84b5;
+}
+
+/* LOGIN / PROFILE / LOGOUT BUTTONS */
+
+.nav-actions a,
+.nav-actions button {
+  transition: 0.2s ease;
+
+  font-weight: 600;
+}
+
+.nav-actions a:hover,
+.nav-actions button:hover {
+  transform: translateY(-1px);
+
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+/* LOGO */
+
+.logo {
+  color: #333;
+
+  letter-spacing: 1px;
+}
 /* ================= LOGIN PAGE ================= */
 
 .auth-container {
@@ -342,6 +393,29 @@ html, body {
   object-fit: cover;
   border-radius: 8px;
 }
+/* REMOVE RATING BUTTON */
+
+.remove-rating-btn {
+  margin-top: 10px;
+  padding: 7px 16px;
+
+  border: none;
+  border-radius: 20px;
+
+  background-color: #e5e5e5;
+  color: #333;
+
+  cursor: pointer;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  transition: 0.2s ease;
+}
+
+.remove-rating-btn:hover {
+  background-color: #d6d6d6;
+}
 
 /* NAVBAR BUTTON */
 .nav-actions button {
@@ -525,5 +599,16 @@ html, body {
   border-radius: 10px;
   border: 1px solid #ccc;
   font-size: 14px;
+  cursor: pointer;
+}
+/* Rating */
+#modal-rating {
+  margin-top: 20px;
+}
+
+.star-btn {
+  background: none;
+  border: none;
+  font-size: 28px;
   cursor: pointer;
 }

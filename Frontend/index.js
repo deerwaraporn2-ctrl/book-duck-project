@@ -118,6 +118,77 @@ async function loadProfile() {
 
     savedContainer.innerHTML = "";
 
+    // ================= RATED BOOKS =================
+
+    const ratedContainer = document.getElementById("rated-books");
+
+    ratedContainer.innerHTML = "";
+
+    const ratingsRes = await axios.get(
+      "http://localhost:1337/api/ratings?populate=*",
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+    const allRatings = ratingsRes.data.data;
+    console.log(allRatings);
+
+    allRatings.forEach((rating) => {
+      const book = rating.book;
+
+      if (!book) return;
+
+      const image = book.cover?.[0]?.url
+        ? `http://localhost:1337${book.cover[0].url}`
+        : "https://placehold.co/80x110?text=No+Image";
+
+      const stars = "⭐".repeat(rating.value);
+
+      const ratedCard = `
+  
+    <div class="saved-book-card">
+
+      <img 
+        src="${image}" 
+        class="saved-book-image"
+      />
+
+      <div class="saved-book-info">
+
+        <h3>${book.title}</h3>
+
+        <p>${book.author}</p>
+
+        <p>${stars}</p>
+
+        <button 
+          class="remove-rating-btn"
+          data-id="${rating.documentId}"
+        >
+          Remove Rating
+        </button>
+
+      </div>
+
+    </div>
+
+    <hr class="saved-divider">
+  `;
+
+      ratedContainer.innerHTML += ratedCard;
+    });
+
+    const removeRatingButtons = document.querySelectorAll(".remove-rating-btn");
+
+    removeRatingButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        removeRating(button.dataset.id);
+      });
+    });
+
     books.forEach((book) => {
       console.log(book);
 
@@ -191,7 +262,9 @@ function logout() {
 // ================= LOAD BOOKS =================
 async function loadBooks() {
   try {
-    const res = await axios.get("http://localhost:1337/api/books?populate=*");
+    const res = await axios.get(
+      "http://localhost:1337/api/books?populate[cover]=true&populate[ratings]=true",
+    );
 
     const books = res.data.data;
 
@@ -208,6 +281,20 @@ async function loadBooks() {
       const author = book.author || "Unknown author";
       const pages = book.pages || "-";
       const published = book.publishedDate || "-";
+
+      console.log(book);
+
+      const ratings = book.ratings || [];
+
+      let averageRating = "No ratings";
+
+      if (ratings.length > 0) {
+        const total = ratings.reduce((sum, rating) => {
+          return sum + Number(rating.value);
+        }, 0);
+
+        averageRating = (total / ratings.length).toFixed(1);
+      }
 
       const bookCard = `
         <div class="book-card">
@@ -235,6 +322,11 @@ async function loadBooks() {
             <p>
               <strong>Published:</strong>
               ${published}
+            </p>
+
+            <p>
+              <strong>Average Rating:</strong>
+              ⭐ ${averageRating}
             </p>
 
             <button 
@@ -301,6 +393,23 @@ function openModal(book) {
   document.getElementById("modal-description").innerText =
     book.description || "No description available.";
 
+  document.getElementById("modal-rating").innerHTML = `
+  <button class="star-btn" data-value="1">⭐</button>
+  <button class="star-btn" data-value="2">⭐</button>
+  <button class="star-btn" data-value="3">⭐</button>
+  <button class="star-btn" data-value="4">⭐</button>
+  <button class="star-btn" data-value="5">⭐</button>
+`;
+  const starButtons = document.querySelectorAll(".star-btn");
+
+  starButtons.forEach((star) => {
+    star.addEventListener("click", () => {
+      const value = star.dataset.value;
+
+      saveRating(book.id, value);
+    });
+  });
+
   modal.classList.remove("hidden");
 }
 
@@ -353,6 +462,58 @@ async function saveBook(event) {
   }
 }
 
+// ================= SAVE RATING =================
+async function saveRating(bookId, ratingValue) {
+  const token = localStorage.getItem("token");
+
+  try {
+    const res = await axios.post(
+      "http://localhost:1337/api/ratings",
+      {
+        data: {
+          value: Number(ratingValue),
+          book: bookId,
+        },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+    console.log(res.data);
+
+    alert("Rating saved ⭐");
+  } catch (err) {
+    console.log(err);
+    console.log(err.response?.data);
+
+    alert("Could not save rating");
+  }
+}
+
+// ================= REMOVE RATING =================
+
+async function removeRating(ratingId) {
+  const token = localStorage.getItem("token");
+
+  try {
+    await axios.delete(`http://localhost:1337/api/ratings/${ratingId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    alert("Rating removed");
+
+    loadProfile();
+  } catch (err) {
+    console.log(err.response?.data);
+
+    alert("Could not remove rating");
+  }
+}
 // ================= CLOSE MODAL =================
 document.addEventListener("DOMContentLoaded", () => {
   const sortBooks = document.getElementById("sort-books");
