@@ -21,7 +21,7 @@
 
     <div class="nav-center">
       <div class="search-box">
-        <input type="text" placeholder="Search books..." />
+        <input type="text" placeholder="Search books..." id="search-input" />
         <span>🔍</span>
       </div>
 
@@ -62,7 +62,7 @@
   </section>
 
   <!-- ================= BOOK MODAL ================= -->
- 
+
   <div id="book-modal" class="hidden">
 
     <div class="modal-content">
@@ -89,6 +89,11 @@
           📚 Save to Read
         </button>
 
+        <div id="modal-admin-actions"></div>
+
+        <p class="rating-text">
+          Click ⭐ to rate this book!
+        </p>
         <div id="modal-rating"></div>
 
       </div>

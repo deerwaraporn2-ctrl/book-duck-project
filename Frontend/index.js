@@ -1,3 +1,5 @@
+let allBooks = [];
+
 // ================= LOGIN =================
 async function handleLogin() {
   const identifier = document.getElementById("login-username").value;
@@ -84,8 +86,13 @@ async function loadProfile() {
 
   try {
     // Welcome text
-    document.getElementById("welcome-user").innerText =
-      `Welcome ${user.username}`;
+    if (user.email === "admin@test.com") {
+      document.getElementById("welcome-user").innerText =
+        "Welcome Super Admin!";
+    } else {
+      document.getElementById("welcome-user").innerText =
+        `Welcome ${user.username}!`;
+    }
 
     // Get user with saved books
     const res = await axios.get(
@@ -125,18 +132,34 @@ async function loadProfile() {
     ratedContainer.innerHTML = "";
 
     const ratingsRes = await axios.get(
-      "http://localhost:1337/api/ratings?populate=*",
+      "http://localhost:1337/api/ratings?populate[book][populate]=cover",
       {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       },
     );
-
     const allRatings = ratingsRes.data.data;
     console.log(allRatings);
 
-    allRatings.forEach((rating) => {
+    const ratedSortValue = document.getElementById("sort-rated-books")?.value;
+
+    // REMOVE ratings without books
+    const validRatings = allRatings.filter((rating) => rating.book);
+
+    if (ratedSortValue === "title") {
+      validRatings.sort((a, b) => a.book.title.localeCompare(b.book.title));
+    }
+
+    if (ratedSortValue === "author") {
+      validRatings.sort((a, b) => a.book.author.localeCompare(b.book.author));
+    }
+
+    if (ratedSortValue === "rating") {
+      validRatings.sort((a, b) => b.value - a.value);
+    }
+
+    validRatings.forEach((rating) => {
       const book = rating.book;
 
       if (!book) return;
@@ -247,6 +270,31 @@ async function loadProfile() {
 
       savedContainer.innerHTML += card;
     });
+    // ================= READ BUTTONS =================
+
+    const readButtons = document.querySelectorAll(".read-btn");
+
+    readButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const bookId = button.dataset.id;
+
+        const selectedBook = books.find((book) => book.id == bookId);
+
+        openModal(selectedBook);
+      });
+    });
+
+    // ================= REMOVE BUTTONS =================
+
+    const removeButtons = document.querySelectorAll(".remove-btn");
+
+    removeButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const bookId = button.dataset.id;
+
+        removeSavedBook(bookId);
+      });
+    });
   } catch (err) {
     console.log(err);
   }
@@ -262,17 +310,16 @@ function logout() {
 // ================= LOAD BOOKS =================
 async function loadBooks() {
   try {
-    const res = await axios.get(
-      "http://localhost:1337/api/books?populate[cover]=true&populate[ratings]=true",
-    );
+    const res = await axios.get("http://localhost:1337/api/books?populate=*");
 
     const books = res.data.data;
+    allBooks = books;
 
     const booksContainer = document.getElementById("books-container");
 
     booksContainer.innerHTML = "";
 
-    books.forEach((book) => {
+    for (const book of books) {
       const image = book.cover?.[0]?.url
         ? `http://localhost:1337${book.cover[0].url}`
         : "https://placehold.co/300x400?text=No+Image";
@@ -282,9 +329,12 @@ async function loadBooks() {
       const pages = book.pages || "-";
       const published = book.publishedDate || "-";
 
-      console.log(book);
+      // LOAD RATINGS FOR THIS BOOK
+      const ratingsRes = await axios.get(
+        `http://localhost:1337/api/ratings?filters[book][id][$eq]=${book.id}&populate=*`,
+      );
 
-      const ratings = book.ratings || [];
+      const ratings = ratingsRes.data.data;
 
       let averageRating = "No ratings";
 
@@ -342,7 +392,7 @@ async function loadBooks() {
       `;
 
       booksContainer.innerHTML += bookCard;
-    });
+    }
 
     // VIEW BUTTONS
     const viewButtons = document.querySelectorAll(".view-btn");
@@ -372,6 +422,9 @@ async function loadBooks() {
 function openModal(book) {
   const modal = document.getElementById("book-modal");
 
+  // STOP if modal does not exist (profile page)
+  if (!modal) return;
+
   const imageUrl = book.cover?.[0]?.url
     ? "http://localhost:1337" + book.cover[0].url
     : "";
@@ -380,7 +433,8 @@ function openModal(book) {
 
   document.getElementById("modal-title").innerText = book.title;
 
-  document.getElementById("modal-author").innerText = "Author: " + book.author;
+  document.getElementById("modal-author").innerText =
+    "Author: " + book.author;
 
   document.getElementById("modal-pages").innerText =
     "Pages: " + (book.pages || "-");
@@ -394,12 +448,13 @@ function openModal(book) {
     book.description || "No description available.";
 
   document.getElementById("modal-rating").innerHTML = `
-  <button class="star-btn" data-value="1">⭐</button>
-  <button class="star-btn" data-value="2">⭐</button>
-  <button class="star-btn" data-value="3">⭐</button>
-  <button class="star-btn" data-value="4">⭐</button>
-  <button class="star-btn" data-value="5">⭐</button>
-`;
+    <button class="star-btn" data-value="1">⭐</button>
+    <button class="star-btn" data-value="2">⭐</button>
+    <button class="star-btn" data-value="3">⭐</button>
+    <button class="star-btn" data-value="4">⭐</button>
+    <button class="star-btn" data-value="5">⭐</button>
+  `;
+
   const starButtons = document.querySelectorAll(".star-btn");
 
   starButtons.forEach((star) => {
@@ -409,6 +464,30 @@ function openModal(book) {
       saveRating(book.id, value);
     });
   });
+
+  // ================= ADMIN DELETE BTN =================
+
+  const user = JSON.parse(localStorage.getItem("user"));
+
+  const isAdmin =
+    user?.email === "admin@test.com" ||
+    (
+      document.getElementById("admin-panel") &&
+      !document.getElementById("admin-panel").classList.contains("hidden")
+    );
+
+  if (isAdmin) {
+    document.getElementById("modal-admin-actions").innerHTML = `
+      <button
+        onclick="deleteBook('${book.documentId}')"
+        class="delete-book-btn"
+      >
+        Delete Book
+      </button>
+    `;
+  } else {
+    document.getElementById("modal-admin-actions").innerHTML = "";
+  }
 
   modal.classList.remove("hidden");
 }
@@ -493,6 +572,110 @@ async function saveRating(bookId, ratingValue) {
   }
 }
 
+// ================= CREATE BOOK =================
+
+async function createBook() {
+  const token = localStorage.getItem("token");
+
+  try {
+    const title = document.getElementById("admin-title").value;
+
+    const author = document.getElementById("admin-author").value;
+
+    const pages = document.getElementById("admin-pages").value;
+
+    const publishedDate = document.getElementById("admin-date").value;
+
+    const description = document.getElementById("admin-description").value;
+
+    const imageFile = document.getElementById("admin-image").files[0];
+
+    // ================= UPLOAD IMAGE =================
+
+    let uploadedImageId = null;
+
+    if (imageFile) {
+      const formData = new FormData();
+
+      formData.append("files", imageFile);
+
+      const uploadRes = await axios.post(
+        "http://localhost:1337/api/upload",
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      uploadedImageId = uploadRes.data[0].id;
+    }
+
+    // ================= CREATE BOOK =================
+
+    await axios.post(
+      "http://localhost:1337/api/books",
+      {
+        data: {
+          title,
+          author,
+          pages: Number(pages),
+          publishedDate,
+          description,
+          cover: uploadedImageId,
+        },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+    alert("Book uploaded 📚");
+
+    /* loadBooks(); */
+  } catch (err) {
+    console.log(err.response?.data);
+
+    debugger;
+
+    alert("Could not upload book");
+  }
+}
+
+// ================= DELETE BOOK =================
+
+async function deleteBook(documentId) {
+  const token = localStorage.getItem("token");
+
+  const confirmDelete = confirm("Delete this book?");
+
+  if (!confirmDelete) return;
+
+  try {
+    await axios.delete(
+      `http://localhost:1337/api/books/${documentId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    alert("Book deleted 📚");
+
+    document.getElementById("book-modal").classList.add("hidden");
+
+    loadBooks();
+
+  } catch (err) {
+    console.log(err.response?.data);
+
+    alert("Could not delete book");
+  }
+}
 // ================= REMOVE RATING =================
 
 async function removeRating(ratingId) {
@@ -514,13 +697,68 @@ async function removeRating(ratingId) {
     alert("Could not remove rating");
   }
 }
-// ================= CLOSE MODAL =================
+// ================= REMOVE SAVED BOOK =================
+
+async function removeSavedBook(bookId) {
+  const token = localStorage.getItem("token");
+
+  const user = JSON.parse(localStorage.getItem("user"));
+
+  try {
+    // GET CURRENT USER
+    const res = await axios.get(
+      `http://localhost:1337/api/users/${user.id}?populate=savedBooks`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+    // REMOVE BOOK
+    const updatedBooks = res.data.savedBooks
+      .filter((book) => book.id != bookId)
+      .map((book) => book.id);
+
+    // UPDATE USER
+    await axios.put(
+      `http://localhost:1337/api/users/${user.id}`,
+      {
+        savedBooks: updatedBooks,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+    alert("Book removed");
+
+    loadProfile();
+  } catch (err) {
+    console.log(err);
+
+    alert("Could not remove book");
+  }
+}
+
+// ================= DOM CONTENT LOADED =================
+
 document.addEventListener("DOMContentLoaded", () => {
+  /* sort books */
   const sortBooks = document.getElementById("sort-books");
 
   if (sortBooks) {
     sortBooks.addEventListener("change", loadProfile);
   }
+
+  const sortRatedBooks = document.getElementById("sort-rated-books");
+
+  if (sortRatedBooks) {
+    sortRatedBooks.addEventListener("change", loadProfile);
+  }
+
   // Only run modal code if modal exists
   const closeBtn = document.getElementById("close-modal");
 
@@ -533,6 +771,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Homepage only
   if (document.getElementById("books-container")) {
     checkUser();
+
     loadBooks();
   }
 
@@ -546,6 +785,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (saveBtn) {
     saveBtn.addEventListener("click", saveBook);
+  }
+
+  // ================= UPLOAD BOOK BTN =================
+
+  const uploadBookBtn = document.getElementById("upload-book-btn");
+
+  if (uploadBookBtn) {
+    uploadBookBtn.addEventListener("click", createBook);
   }
 });
 
@@ -585,5 +832,76 @@ if (logoutBtn) {
     localStorage.removeItem("user");
 
     window.location.href = "index.html";
+  });
+}
+// ================= THEME colors =================
+
+function setTheme(theme) {
+  document.body.className = theme;
+
+  localStorage.setItem("theme", theme);
+}
+
+// LOAD SAVED THEME
+const savedTheme = localStorage.getItem("theme");
+
+if (savedTheme) {
+  document.body.className = savedTheme;
+}
+
+// ================= search input =================
+
+const searchInput = document.getElementById("search-input");
+
+if (searchInput) {
+  searchInput.addEventListener("input", () => {
+    const searchValue = searchInput.value.toLowerCase();
+
+    const bookCards = document.querySelectorAll(".book-card");
+
+    bookCards.forEach((card) => {
+      const text = card.innerText.toLowerCase();
+
+      if (text.includes(searchValue)) {
+        card.style.display = "flex";
+      } else {
+        card.style.display = "none";
+      }
+    });
+  });
+}
+
+const user = JSON.parse(localStorage.getItem("user"));
+
+const adminBtn = document.getElementById("admin-btn");
+
+const superAdminBtn = document.getElementById("super-admin-btn");
+
+const themePanel = document.getElementById("theme-panel");
+
+const adminPanel = document.getElementById("admin-panel");
+
+// ================= SUPER ADMIN =================
+
+if (user?.email === "admin@test.com") {
+  // show super admin button
+  superAdminBtn.classList.remove("hidden");
+
+  // show theme controls
+  themePanel.classList.remove("hidden");
+
+  // hide normal admin button
+  adminBtn.classList.add("hidden");
+}
+
+// ================= ADMIN PANEL =================
+
+if (adminBtn) {
+  adminBtn.addEventListener("click", () => {
+    adminPanel.classList.remove("hidden");
+
+    adminBtn.disabled = true;
+
+    adminBtn.innerText = "Admin Active";
   });
 }
