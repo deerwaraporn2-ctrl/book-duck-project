@@ -29,6 +29,10 @@ async function handleRegister() {
   const email = document.getElementById("register-email").value;
   const password = document.getElementById("register-password").value;
 
+  console.log(username);
+  console.log(email);
+  console.log(password);
+
   try {
     await axios.post("http://localhost:1337/api/auth/local/register", {
       username,
@@ -433,8 +437,7 @@ function openModal(book) {
 
   document.getElementById("modal-title").innerText = book.title;
 
-  document.getElementById("modal-author").innerText =
-    "Author: " + book.author;
+  document.getElementById("modal-author").innerText = "Author: " + book.author;
 
   document.getElementById("modal-pages").innerText =
     "Pages: " + (book.pages || "-");
@@ -471,10 +474,8 @@ function openModal(book) {
 
   const isAdmin =
     user?.email === "admin@test.com" ||
-    (
-      document.getElementById("admin-panel") &&
-      !document.getElementById("admin-panel").classList.contains("hidden")
-    );
+    (document.getElementById("admin-panel") &&
+      !document.getElementById("admin-panel").classList.contains("hidden"));
 
   if (isAdmin) {
     document.getElementById("modal-admin-actions").innerHTML = `
@@ -655,21 +656,17 @@ async function deleteBook(documentId) {
   if (!confirmDelete) return;
 
   try {
-    await axios.delete(
-      `http://localhost:1337/api/books/${documentId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+    await axios.delete(`http://localhost:1337/api/books/${documentId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
     alert("Book deleted 📚");
 
     document.getElementById("book-modal").classList.add("hidden");
 
     loadBooks();
-
   } catch (err) {
     console.log(err.response?.data);
 
